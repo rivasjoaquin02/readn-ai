@@ -2,14 +2,16 @@ import { z } from "zod";
 
 // NOTE: can be raplaced with an ORM like prisma or drizzle
 
-export const User = z.object({
+export const UserSchema = z.object({
     id: z.string(),
     name: z.string(),
     email: z.string().email(),
     password: z.string(),
 });
 
-export const Book = z.object({
+export type User = z.infer<typeof UserSchema>
+
+export const BookSchema = z.object({
     id: z.string(),
     title: z.string(),
     pages: z.number(),
@@ -20,13 +22,18 @@ export const Book = z.object({
     ISBN: z.string(),
 });
 
-export const Author = z.object({
+export type Book = z.infer<typeof BookSchema>
+
+export const AuthorSchema = z.object({
     id: z.string(),
     name: z.string()
 })
 
-export const BookAuthor = z.object({
+export type Author = z.infer<typeof AuthorSchema>
+
+export const BookAuthorSchema = z.object({
     book_id: z.string(),
     author_id: z.string()
 })
 
+export type BookAuthor = z.infer<typeof BookAuthorSchema>
