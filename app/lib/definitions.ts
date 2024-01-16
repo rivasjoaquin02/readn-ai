@@ -18,6 +18,7 @@ export const BookSchema = z.object({
     genre: z.string(),
     cover: z.string().url(),
     synopsis: z.string(),
+    dateAdded: z.string(), //FIX: can be changed to z.date()
     year: z.number().gt(0),
     ISBN: z.string()
 });
@@ -25,8 +26,8 @@ export const BookSchema = z.object({
 export type Book = z.infer<typeof BookSchema>;
 
 const UserBookSchema = z.object({
-    book_id: z.string(),
-    user_id: z.string(),
+    bookId: z.string(),
+    userId: z.string(),
     current_page: z.number().default(0),
     rating: z.number().gt(0).lt(5),
     favorite: z.boolean(),
@@ -42,9 +43,9 @@ export const AuthorSchema = z.object({
 
 export type Author = z.infer<typeof AuthorSchema>;
 
-export const BookAuthorSchema = z.object({
-    book_id: z.string(),
-    author_id: z.string()
+export const AuthorBookSchema = z.object({
+    bookId: z.string(),
+    authorId: z.string()
 });
 
-export type BookAuthor = z.infer<typeof BookAuthorSchema>;
+export type AuthorBook = z.infer<typeof AuthorBookSchema>;
