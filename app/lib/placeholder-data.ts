@@ -7,6 +7,17 @@ export const users = [
     },
 ];
 
+export const user_book = [
+    {
+        book_id: "e5bbd46b-5631-4e36-a808-77d5c2523666",
+        user_id: "550e8400-e29b-41d4-a716-446655440000",
+        current_page: 20,
+        rating: 5,
+        favorite: true,
+        review: ""
+    }
+]
+
 export const books = [
     {
         id: "e5bbd46b-5631-4e36-a808-77d5c2523666",
