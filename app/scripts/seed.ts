@@ -1,8 +1,22 @@
 import { Client } from "pg";
 import bcrypt from "bcrypt";
-import { users, books, authors, book_author } from "@/lib/placeholder-data";
+import {
+    users,
+    books,
+    authors,
+    book_author,
+    user_book
+} from "@/lib/placeholder-data";
 import { env } from "@/lib/config";
-import type { Book, User, Author, BookAuthor } from "@/lib/definitions";
+import type {
+    Book,
+    User,
+    Author,
+    BookAuthor,
+    UserBook
+} from "@/lib/definitions";
+
+// TODO: this functions are very similar
 
 async function seedUsers(client: Client) {
     try {
@@ -14,7 +28,7 @@ async function seedUsers(client: Client) {
                 name VARCHAR(255) NOT NULL,
                 email TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL
-            );`,
+            );`
         );
         console.log("Created 'user' table");
 
@@ -26,15 +40,15 @@ async function seedUsers(client: Client) {
                     `INSERT INTO "user" (id, name, email, password)
                      VALUES ($1, $2, $3, $4)
                      ON CONFLICT (id) DO NOTHING;`,
-                    [user.id, user.name, user.email, hashedPassword],
+                    [user.id, user.name, user.email, hashedPassword]
                 );
-            }),
+            })
         );
         console.log(`Seeded ${insertedUsers.length} of ${users.length} users`);
 
         return {
             table: createdTable,
-            users: insertedUsers,
+            users: insertedUsers
         };
     } catch (err) {
         console.error("Error seeding users: ", err);
@@ -56,7 +70,7 @@ async function seedBooks(client: Client) {
                 synopsis TEXT,
                 year INT,
                 ISBN VARCHAR(20)
-            );`,
+            );`
         );
         console.log("Created 'book' table");
 
@@ -75,19 +89,66 @@ async function seedBooks(client: Client) {
                         book.cover,
                         book.synopsis,
                         book.year,
-                        book.ISBN,
-                    ],
+                        book.ISBN
+                    ]
                 );
-            }),
+            })
         );
         console.log(`Seeded ${insertedBooks.length} of ${books.length} books`);
 
         return {
             createdTable: createdBookTable,
-            books: insertedBooks,
+            books: insertedBooks
         };
     } catch (err) {
         console.error("Error seeding books: ", err);
+        throw err;
+    }
+}
+
+async function seedUserBook(client: Client) {
+    try {
+        // Create "user" table if it doesn't exist
+        const createdTable = await client.query(
+            `CREATE TABLE IF NOT EXISTS "user_book" (
+                user_id UUID NOT NULL,
+                book_id UUID NOT NULL,
+                current_page INT DEFAULT 0,
+                rating INT,
+                favorite BOOL,
+                review TEXT,
+                CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id),
+                CONSTRAINT fk_book FOREIGN KEY (book_id) REFERENCES book(id)
+            );`
+        );
+        console.log("Created 'user_book' table");
+
+        // Insert data into the "user_book" table
+        const insertedUserBook = await Promise.all(
+            user_book.map(async (userBook: UserBook) => {
+                return client.query(
+                    `INSERT INTO user_book (user_id, book_id, current_page, rating, favorite, review)
+                     VALUES ($1, $2, $3, $4, $5, $6)
+                     ON CONFLICT DO NOTHING;`,
+                    [
+                        userBook.user_id,
+                        userBook.book_id,
+                        userBook.current_page,
+                        userBook.rating,
+                        userBook.favorite,
+                        userBook.review
+                    ]
+                );
+            })
+        );
+        console.log(`Seeded ${insertedUserBook.length} of ${user_book.length} users`);
+
+        return {
+            table: createdTable,
+            users: insertedUserBook
+        };
+    } catch (err) {
+        console.error("Error seeding userBook: ", err);
         throw err;
     }
 }
@@ -100,7 +161,7 @@ async function seedAuthors(client: Client) {
             `CREATE TABLE IF NOT EXISTS author (
                 id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
                 name VARCHAR(255)
-            );`,
+            );`
         );
         console.log("Created 'author' table");
 
@@ -111,17 +172,17 @@ async function seedAuthors(client: Client) {
                     `INSERT INTO author (id, name)
                      VALUES ($1, $2)
                      ON CONFLICT (id) DO NOTHING;`,
-                    [author.id, author.name],
+                    [author.id, author.name]
                 );
-            }),
+            })
         );
         console.log(
-            `Seeded ${insertedAuthors.length} of ${authors.length} authors`,
+            `Seeded ${insertedAuthors.length} of ${authors.length} authors`
         );
 
         return {
             createdTable: createdAuthorTable,
-            authors: insertedAuthors,
+            authors: insertedAuthors
         };
     } catch (err) {
         console.error("Error seeding authors: ", err);
@@ -135,11 +196,11 @@ async function seedBookAuthor(client: Client) {
         // Create "book_author" table if it doesn't exist
         const createdBookAuthorTable = await client.query(
             `CREATE TABLE IF NOT EXISTS book_author (
-                book_id UUID DEFAULT uuid_generate_v4(),
-                author_id UUID DEFAULT uuid_generate_v4(),
+                book_id UUID NOT NULL,
+                author_id UUID NOT NULL,
                 CONSTRAINT fk_book FOREIGN KEY (book_id) REFERENCES book(id),
                 CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES author(id)
-            );`,
+            );`
         );
         console.log("Created 'book_author' table");
 
@@ -150,17 +211,17 @@ async function seedBookAuthor(client: Client) {
                     `INSERT INTO book_author (book_id, author_id)
                      VALUES ($1, $2)
                      ON CONFLICT DO NOTHING;`,
-                    [bookAuthor.book_id, bookAuthor.author_id],
+                    [bookAuthor.book_id, bookAuthor.author_id]
                 );
-            }),
+            })
         );
         console.log(
-            `Seeded ${insertedBookAuthor.length} of ${book_author.length} book_author`,
+            `Seeded ${insertedBookAuthor.length} of ${book_author.length} book_author`
         );
 
         return {
             createdTable: createdBookAuthorTable,
-            bookAuthors: insertedBookAuthor,
+            bookAuthors: insertedBookAuthor
         };
     } catch (err) {
         console.error("Error seeding bookAuthor: ", err);
@@ -174,12 +235,13 @@ async function main() {
         port: env.PG_PORT,
         user: env.PG_USER,
         password: env.PG_PASS,
-        database: env.PG_DATABASE,
+        database: env.PG_DATABASE
     });
     await client.connect();
 
     await seedUsers(client);
     await seedBooks(client);
+    await seedUserBook(client)
     await seedAuthors(client);
     await seedBookAuthor(client);
 
@@ -189,4 +251,3 @@ async function main() {
 main().catch((err) => {
     console.error("An error occurred while attempting to seed the DB:", err);
 });
-
