@@ -44,33 +44,105 @@ export async function getBookPages(query: string): Promise<number> {
 export async function getFilteredBooks(
     query: string,
     currentPage: number,
+    recent?: "asc" | "desc",
     userId?: string
 ): Promise<Book[]> {
     //noStore();
     const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
     try {
-        const books = await sql<Book[]>`
-        SELECT 
-            book.id, 
-            book.title, 
-            book.pages, 
-            book.genre, 
-            book.cover, 
-            book.synopsis, 
-            book.year, 
-            book.ISBN
-        FROM book
-        WHERE 
-            book.title ILIKE ${`%${query}%`} OR
-            book.genre ILIKE ${`%${query}%`} OR
-            book.year::text ILIKE ${`%${query}%`}
-        ORDER BY book.year DESC
-        LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset};`;
+        //TODO: this is a shitties shit - sorry
+        let books: Book[];
+        switch (recent) {
+            case "asc":
+                books = await sql<Book[]>`
+                    SELECT 
+                        book.id, 
+                        book.title, 
+                        book.pages, 
+                        book.genre, 
+                        book.cover, 
+                        book.synopsis, 
+                        book.dateAdded, 
+                        book.year, 
+                        book.ISBN
+                    FROM book
+                    WHERE 
+                        book.title ILIKE ${`%${query}%`} OR
+                        book.genre ILIKE ${`%${query}%`} OR
+                        book.year::text ILIKE ${`%${query}%`}
+                    ORDER BY book.dateAdded ASC
+                    LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset};`;
+                break;
+            case "desc":
+                books = await sql<Book[]>`
+                    SELECT 
+                        book.id, 
+                        book.title, 
+                        book.pages, 
+                        book.genre, 
+                        book.cover, 
+                        book.synopsis, 
+                        book.dateAdded, 
+                        book.year, 
+                        book.ISBN
+                    FROM book
+                    WHERE 
+                        book.title ILIKE ${`%${query}%`} OR
+                        book.genre ILIKE ${`%${query}%`} OR
+                        book.year::text ILIKE ${`%${query}%`}
+                    ORDER BY book.dateAdded DESC
+                    LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset};`;
+                break;
+            default:
+                books = await sql<Book[]>`
+                    SELECT 
+                        book.id, 
+                        book.title, 
+                        book.pages, 
+                        book.genre, 
+                        book.cover, 
+                        book.synopsis, 
+                        book.dateAdded, 
+                        book.year, 
+                        book.ISBN
+                    FROM book
+                    WHERE 
+                        book.title ILIKE ${`%${query}%`} OR
+                        book.genre ILIKE ${`%${query}%`} OR
+                        book.year::text ILIKE ${`%${query}%`}
+                    LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset};`;
+                break;
+        }
 
         return books;
     } catch (err) {
         console.error("Failed to get books:", err);
+        throw err;
+    }
+}
+
+type RecentBook = {
+    id: Book["id"];
+    title: Book["title"];
+    cover: Book["cover"];
+};
+
+export async function getRecentBooks(): Promise<RecentBook[]> {
+    //noStore();
+
+    try {
+        const books = await sql<RecentBook[]>`
+        SELECT 
+            book.id, 
+            book.title, 
+            book.cover
+        FROM book
+        ORDER BY book.year DESC;`;
+
+        return books;
+    } catch (err) {
+        console.error("Failed to get recent books: ", err);
         throw err;
     }
 }
@@ -98,4 +170,10 @@ export async function getBookById(id: string): Promise<Book> {
         console.error(`Failed to get the book with id ${id}:`, err);
         throw err;
     }
+}
+
+export async function getQuote() {
+    const res = await fetch("https://api.quotable.io/quotes/random");
+    const data = await res.json();
+    return data[0];
 }
