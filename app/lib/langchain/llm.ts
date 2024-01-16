@@ -1,6 +1,6 @@
-import { ChatOllama } from "langchain/chat_models/ollama";
-import { OllamaEmbeddings } from "langchain/embeddings/ollama";
-import { env } from "./config";
+import { ChatOllama } from "@langchain/community/chat_models/ollama";
+import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
+import { env } from "@/lib/config";
 
 const ollamaUrl = `http://${env.OLLAMA_HOST}:${env.OLLAMA_PORT}`
  
