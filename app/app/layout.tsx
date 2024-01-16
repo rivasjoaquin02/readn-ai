@@ -33,8 +33,8 @@ export default function RootLayout({
                         <div>
                             <SideNav />
                         </div>
-                        <div className="flex-grow p-4 md:overflow-y-auto">
-                            <header className="flex justify-between mb-10">
+                        <div className="h-screen flex flex-col gap-10 flex-grow p-4 overflow-y-auto">
+                            <header className="flex justify-between">
                                 <NavBar />
                             </header>
                             {children}
