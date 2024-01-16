@@ -1,13 +1,17 @@
-import { getBooks } from "@/lib/data"
-import  BookCard  from "./book"
+import { getFilteredBooks } from "@/lib/data"
+import BookCard from "@/components/book"
 
-export async function ListBooks() {
-    const books = await getBooks()
+type ListBooksProps = {
+    query: string,
+    currentPage: number
+}
+export async function ListBooks({ query, currentPage }: ListBooksProps) {
+    const books = await getFilteredBooks(query, currentPage)
 
     return <>
         {books.map((book) =>
-            <BookCard key={book.id} book={book} >
-                <BookCard.Image src={book.cover} alt={book.title}/>
+            <BookCard key={book.id}  >
+                <BookCard.Image id={book.id} href={`/books/${book.id}`} src={book.cover} alt={book.title} />
                 <BookCard.Info>
                     <BookCard.Title >
                         {book.title}
