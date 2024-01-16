@@ -1,251 +1,207 @@
-import { Client } from "pg";
+import postgres, { type Sql } from "postgres";
 import bcrypt from "bcrypt";
 import {
     users,
     books,
     authors,
-    book_author,
-    user_book
+    authorBook,
+    userBook
 } from "@/lib/placeholder-data";
 import { env } from "@/lib/config";
 import type {
     Book,
     User,
     Author,
-    BookAuthor,
+    AuthorBook,
     UserBook
 } from "@/lib/definitions";
 
 // TODO: this functions are very similar
 
-async function seedUsers(client: Client) {
+async function seedUsers(table: string, data: User[], sql: Sql) {
     try {
-        await client.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
-        // Create "user" table if it doesn't exist
-        const createdTable = await client.query(
-            `CREATE TABLE IF NOT EXISTS "user" (
+        await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`;
+        const insertedTable = await sql`CREATE TABLE IF NOT EXISTS "user" (
                 id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 email TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL
-            );`
-        );
-        console.log("Created 'user' table");
+            );`;
+        console.log(`Created table ${table}`);
 
-        // Insert data into the "users" table
-        const insertedUsers = await Promise.all(
-            users.map(async (user: User) => {
+        const insertedData = await Promise.all(
+            data.map(async (user) => {
                 const hashedPassword = await bcrypt.hash(user.password, 10);
-                return client.query(
-                    `INSERT INTO "user" (id, name, email, password)
-                     VALUES ($1, $2, $3, $4)
-                     ON CONFLICT (id) DO NOTHING;`,
-                    [user.id, user.name, user.email, hashedPassword]
-                );
+                return sql`
+                     INSERT INTO "user" (id, name, email, password)
+                     VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
+                     ON CONFLICT (id) DO NOTHING;`;
             })
         );
-        console.log(`Seeded ${insertedUsers.length} of ${users.length} users`);
+        console.log(
+            `Seeded ${insertedData.length} of ${data.length} from table ${table}`
+        );
 
-        return {
-            table: createdTable,
-            users: insertedUsers
-        };
+        return { table: insertedTable, data: insertedData };
     } catch (err) {
-        console.error("Error seeding users: ", err);
+        console.error(`Error seeding table ${table}: `, err);
         throw err;
     }
 }
 
-async function seedBooks(client: Client) {
+async function seedBooks(table: string, data: Book[], sql: Sql) {
     try {
-        await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
-        // Create "book" table if it doesn't exist
-        const createdBookTable = await client.query(
-            `CREATE TABLE IF NOT EXISTS book (
+        await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`;
+        const insertedTable = await sql`CREATE TABLE IF NOT EXISTS book (
                 id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
                 title VARCHAR(255),
                 pages INT NOT NULL,
                 genre VARCHAR(255),
                 cover TEXT,
                 synopsis TEXT,
+                dateAdded DATE,
                 year INT,
                 ISBN VARCHAR(20)
-            );`
-        );
-        console.log("Created 'book' table");
+            );`;
+        console.log(`Created table ${table}`);
 
-        // Insert data into the "book" table
-        const insertedBooks = await Promise.all(
-            books.map(async (book: Book) => {
-                return client.query(
-                    `INSERT INTO book (id, title, pages, genre, cover, synopsis, year, ISBN)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                     ON CONFLICT (id) DO NOTHING;`,
-                    [
-                        book.id,
-                        book.title,
-                        book.pages,
-                        book.genre,
-                        book.cover,
-                        book.synopsis,
-                        book.year,
-                        book.ISBN
-                    ]
-                );
+        const insertedData = await Promise.all(
+            data.map(async (book) => {
+                return sql`INSERT INTO book (id, title, pages, genre, cover, synopsis, dateAdded, year, ISBN)
+                     VALUES (
+                        ${book.id}, 
+                        ${book.title}, 
+                        ${book.pages}, 
+                        ${book.genre}, 
+                        ${book.cover}, 
+                        ${book.synopsis},
+                        ${book.dateAdded},
+                        ${book.year}, 
+                        ${book.ISBN})
+                     ON CONFLICT (id) DO NOTHING;`;
             })
         );
-        console.log(`Seeded ${insertedBooks.length} of ${books.length} books`);
+        console.log(
+            `Seeded ${insertedData.length} of ${data.length} from table ${table}`
+        );
 
-        return {
-            createdTable: createdBookTable,
-            books: insertedBooks
-        };
+        return { table: insertedTable, data: insertedData };
     } catch (err) {
-        console.error("Error seeding books: ", err);
+        console.error(`Error seeding table ${table}: `, err);
         throw err;
     }
 }
 
-async function seedUserBook(client: Client) {
+async function seedUserBook(table: string, data: UserBook[], sql: Sql) {
     try {
-        // Create "user" table if it doesn't exist
-        const createdTable = await client.query(
-            `CREATE TABLE IF NOT EXISTS "user_book" (
-                user_id UUID NOT NULL,
-                book_id UUID NOT NULL,
+        const createdTable = await sql`CREATE TABLE IF NOT EXISTS userBook (
+                userId UUID NOT NULL,
+                bookId UUID NOT NULL,
                 current_page INT DEFAULT 0,
                 rating INT,
                 favorite BOOL,
                 review TEXT,
-                CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id),
-                CONSTRAINT fk_book FOREIGN KEY (book_id) REFERENCES book(id)
-            );`
-        );
-        console.log("Created 'user_book' table");
+                CONSTRAINT fk_user FOREIGN KEY (userId) REFERENCES "user"(id),
+                CONSTRAINT fk_book FOREIGN KEY (bookId) REFERENCES book(id)
+            );`;
+        console.log(`Created table ${table}`);
 
-        // Insert data into the "user_book" table
-        const insertedUserBook = await Promise.all(
-            user_book.map(async (userBook: UserBook) => {
-                return client.query(
-                    `INSERT INTO user_book (user_id, book_id, current_page, rating, favorite, review)
-                     VALUES ($1, $2, $3, $4, $5, $6)
-                     ON CONFLICT DO NOTHING;`,
-                    [
-                        userBook.user_id,
-                        userBook.book_id,
-                        userBook.current_page,
-                        userBook.rating,
-                        userBook.favorite,
-                        userBook.review
-                    ]
-                );
+        const insertedData = await Promise.all(
+            data.map(async (userBook) => {
+                return sql`INSERT INTO userBook (userId, bookId, current_page, rating, favorite, review)
+                     VALUES (
+                        ${userBook.userId},
+                        ${userBook.bookId},
+                        ${userBook.current_page},
+                        ${userBook.rating},
+                        ${userBook.favorite},
+                        ${userBook.review})
+                     ON CONFLICT DO NOTHING;`;
             })
         );
-        console.log(`Seeded ${insertedUserBook.length} of ${user_book.length} users`);
+        console.log(
+            `Seeded ${insertedData.length} of ${data.length} from table ${table}`
+        );
 
-        return {
-            table: createdTable,
-            users: insertedUserBook
-        };
+        return { table: createdTable, data: insertedData };
     } catch (err) {
-        console.error("Error seeding userBook: ", err);
+        console.error(`Error seeding table ${table}: `, err);
         throw err;
     }
 }
 
-async function seedAuthors(client: Client) {
+async function seedAuthors(table: string, data: Author[], sql: Sql) {
     try {
-        await client.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
-        // Create "author" table if it doesn't exist
-        const createdAuthorTable = await client.query(
-            `CREATE TABLE IF NOT EXISTS author (
+        await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`;
+        const createdTable = await sql`CREATE TABLE IF NOT EXISTS author (
                 id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
                 name VARCHAR(255)
-            );`
-        );
-        console.log("Created 'author' table");
+            );`;
+        console.log(`Created table ${table}`);
 
-        // Insert data into the "booke table
-        const insertedAuthors = await Promise.all(
-            authors.map(async (author: Author) => {
-                return client.query(
-                    `INSERT INTO author (id, name)
-                     VALUES ($1, $2)
-                     ON CONFLICT (id) DO NOTHING;`,
-                    [author.id, author.name]
-                );
+        const insertedData = await Promise.all(
+            data.map(async (author) => {
+                return sql`INSERT INTO author (id, name)
+                     VALUES (${author.id}, ${author.name})
+                     ON CONFLICT (id) DO NOTHING;`;
             })
         );
         console.log(
-            `Seeded ${insertedAuthors.length} of ${authors.length} authors`
+            `Seeded ${insertedData.length} of ${data.length} from table ${table}`
         );
 
-        return {
-            createdTable: createdAuthorTable,
-            authors: insertedAuthors
-        };
+        return { table: createdTable, data: insertedData };
     } catch (err) {
-        console.error("Error seeding authors: ", err);
+        console.error(`Error seeding table ${table}: `, err);
         throw err;
     }
 }
 
-async function seedBookAuthor(client: Client) {
+async function seedAuthorBook(table: string, data: AuthorBook[], sql: Sql) {
     try {
-        await client.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
-        // Create "book_author" table if it doesn't exist
-        const createdBookAuthorTable = await client.query(
-            `CREATE TABLE IF NOT EXISTS book_author (
-                book_id UUID NOT NULL,
-                author_id UUID NOT NULL,
-                CONSTRAINT fk_book FOREIGN KEY (book_id) REFERENCES book(id),
-                CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES author(id)
-            );`
-        );
-        console.log("Created 'book_author' table");
+        await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`;
+        const createdTable = await sql`CREATE TABLE IF NOT EXISTS authorBook (
+                bookId UUID NOT NULL,
+                authorId UUID NOT NULL,
+                CONSTRAINT fk_book FOREIGN KEY (bookId) REFERENCES book(id),
+                CONSTRAINT fk_author FOREIGN KEY (authorId) REFERENCES author(id)
+            );`;
+        console.log(`Created table ${table}`);
 
-        // Insert data into the "booke table
-        const insertedBookAuthor = await Promise.all(
-            book_author.map(async (bookAuthor: BookAuthor) => {
-                return client.query<BookAuthor>(
-                    `INSERT INTO book_author (book_id, author_id)
-                     VALUES ($1, $2)
-                     ON CONFLICT DO NOTHING;`,
-                    [bookAuthor.book_id, bookAuthor.author_id]
-                );
+        const insertedData = await Promise.all(
+            data.map(async (authorBook) => {
+                return sql`INSERT INTO authorBook (bookId, authorId)
+                     VALUES (${authorBook.bookId}, ${authorBook.authorId})
+                     ON CONFLICT DO NOTHING;`;
             })
         );
         console.log(
-            `Seeded ${insertedBookAuthor.length} of ${book_author.length} book_author`
+            `Seeded ${insertedData.length} of ${data.length} from table ${table}`
         );
 
-        return {
-            createdTable: createdBookAuthorTable,
-            bookAuthors: insertedBookAuthor
-        };
+        return { table: createdTable, data: insertedData };
     } catch (err) {
-        console.error("Error seeding bookAuthor: ", err);
+        console.error(`Error seeding table ${table}: `, err);
         throw err;
     }
 }
 
 async function main() {
-    const client = new Client({
+    const sql = postgres({
         host: env.PG_HOST,
         port: env.PG_PORT,
         user: env.PG_USER,
         password: env.PG_PASS,
         database: env.PG_DATABASE
     });
-    await client.connect();
 
-    await seedUsers(client);
-    await seedBooks(client);
-    await seedUserBook(client)
-    await seedAuthors(client);
-    await seedBookAuthor(client);
+    await seedUsers("user", users, sql);
+    await seedBooks("book", books, sql);
+    await seedUserBook("userBook", userBook, sql);
+    await seedAuthors("author", authors, sql);
+    await seedAuthorBook("authorBook", authorBook, sql);
 
-    await client.end();
+    await sql.end();
 }
 
 main().catch((err) => {
