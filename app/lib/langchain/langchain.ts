@@ -1,10 +1,11 @@
-import { StringOutputParser } from "langchain/schema/output_parser";
-import { RunnableSequence } from "langchain/schema/runnable";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { RunnableSequence } from "@langchain/core/runnables";
 import { formatDocumentsAsString } from "langchain/util/document";
 import { getRetriever } from "./vector-store-pg";
 import { questionPrompt } from "./prompt";
 import { model } from "./llm";
 import { getPgVectorClient } from "./pg-client";
+import { StreamingTextResponse } from "ai";
 
 type callChainParams = {
     question: string;
@@ -12,6 +13,7 @@ type callChainParams = {
 };
 
 export async function callChain({ question, chatHistory }: callChainParams) {
+    const outputParser = new StringOutputParser();
     const client = await getPgVectorClient()
     const retriever = await getRetriever(client);
 
@@ -31,10 +33,10 @@ export async function callChain({ question, chatHistory }: callChainParams) {
         },
         questionPrompt,
         model,
-        new StringOutputParser(),
+        outputParser
     ]);
 
     const stream = await chain.stream({ question, chatHistory });
-    return stream;
+    return new StreamingTextResponse(stream)
 }
 
