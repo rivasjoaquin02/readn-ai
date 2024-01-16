@@ -1,6 +1,6 @@
-import { PGVectorStore } from "langchain/vectorstores/pgvector";
-import { embeddings } from "./llm";
-import { config } from "./config";
+import { PGVectorStore } from "@langchain/community/vectorstores/pgvector"
+import { embeddings } from "@/lib/langchain/llm";
+import { config } from "@/lib/config";
 
 let pgVectorClientInstance: PGVectorStore | null = null;
 
