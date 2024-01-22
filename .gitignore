@@ -1,3 +1,4 @@
 docs/*
 services/db/
 *.bin
+bun.lockb
