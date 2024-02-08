@@ -23,7 +23,7 @@ export const config = {
         password: env.PG_PASS,
         database: env.PG_DATABASE,
     } as PoolConfig,
-    tableName: "testlangchain",
+    tableName: "embeddings",
     columns: {
         idColumnName: "id",
         vectorColumnName: "vector",
