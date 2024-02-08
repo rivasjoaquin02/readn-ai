@@ -3,21 +3,13 @@ services:
   db:
     image: ankane/pgvector
     ports:
-      - 5433:5432
+      - 5432:5432
     volumes:
       - ./data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_PASSWORD=[PASS]
-      - POSTGRES_USER=[USER]
-      - POSTGRES_DB=[DB]
-  ollama:
-    image: ollama/ollama
-    container_name: ollama
-    restart: unless-stopped
-    volumes:
-      - ollama:/root/.ollama
-    ports:
-      - 11434:11434
+      - POSTGRES_PASSWORD=1234
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
 
 volumes:
   ollama: {}
