@@ -9,7 +9,7 @@ import { PromptTemplate } from "@langchain/core/prompts";
  * inputVariables: ["chatHistory", "context", "question"]
  */
 export const questionPrompt = PromptTemplate.fromTemplate(
-    `Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+    `Usa las el siguiente contexto para responder la pregunta. Si no conoces la respuesta, solo di que no la conoces, no intentes inventar una respuesta
 ----------
 CONTEXT: {context}
 ----------
@@ -17,5 +17,5 @@ CHAT HISTORY: {chatHistory}
 ----------
 QUESTION: {question}
 ----------
-Helpful Answer:`
+Respuesta:`
 );

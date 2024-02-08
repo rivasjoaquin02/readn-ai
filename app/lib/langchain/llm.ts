@@ -7,7 +7,7 @@ const ollamaUrl = `http://${env.OLLAMA_HOST}:${env.OLLAMA_PORT}`
 export const model = new ChatOllama({
     baseUrl: ollamaUrl,
     model: env.OLLAMA_MODEL,
-    temperature: 0,
+    temperature: 0.6,
     verbose: true,
 });
 
